@@ -12,16 +12,24 @@ from ..config import settings
 
 class AuthService:
     def __init__(self) -> None:
-        if not settings.supabase_url or not settings.supabase_publishable_key:
-            raise RuntimeError("Supabase auth is not configured")
-        self.base_url = settings.supabase_url.rstrip("/")
-        self.auth_url = f"{self.base_url}/auth/v1"
-        self.headers = {
-            "apikey": settings.supabase_publishable_key,
-            "Content-Type": "application/json",
-        }
         self._jwks: dict[str, Any] | None = None
         self._jwks_loaded_at = 0.0
+
+    @property
+    def base_url(self) -> str:
+        if not settings.supabase_url:
+            raise HTTPException(status_code=500, detail="Supabase URL is not configured")
+        return settings.supabase_url.rstrip("/")
+
+    @property
+    def auth_url(self) -> str:
+        return f"{self.base_url}/auth/v1"
+
+    @property
+    def headers(self) -> dict[str, str]:
+        if not settings.supabase_publishable_key:
+            raise HTTPException(status_code=500, detail="Supabase publishable key is not configured")
+        return {"apikey": settings.supabase_publishable_key, "Content-Type": "application/json"}
 
     async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         headers = {**self.headers, **kwargs.pop("headers", {})}
@@ -73,17 +81,22 @@ class AuthService:
                 key_data = next((key for key in keys if key.get("kid") == header.get("kid")), None)
                 if not key_data:
                     raise ValueError("Unknown signing key")
-                signing_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data) if key_data.get("kty") == "RSA" else jwt.algorithms.ECAlgorithm.from_jwk(key_data)
-                return jwt.decode(token, signing_key, algorithms=[header.get("alg", "ES256")], audience="authenticated", issuer=f"{self.auth_url}")
+                if key_data.get("kty") == "RSA":
+                    signing_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
+                elif key_data.get("kty") == "EC":
+                    signing_key = jwt.algorithms.ECAlgorithm.from_jwk(key_data)
+                else:
+                    raise ValueError("Unsupported signing key type")
+                return jwt.decode(token, signing_key, algorithms=[header.get("alg", "ES256")], audience="authenticated", issuer=self.auth_url)
             except (jwt.PyJWTError, ValueError, TypeError) as exc:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired access token") from exc
 
-        # Fallback for projects using a legacy symmetric JWT signing secret.
+        # Legacy projects with symmetric signing secrets are verified by Supabase Auth itself.
         try:
             return await self._verified_user_claims(token)
+        except HTTPException:
+            raise
         except Exception as exc:
-            if isinstance(exc, HTTPException):
-                raise
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unable to verify access token") from exc
 
     async def _verified_user_claims(self, token: str) -> dict[str, Any]:
