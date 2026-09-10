@@ -2,13 +2,17 @@
   "name": "livya-smart-app",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["apps/mobile"],
+  "workspaces": ["apps/mobile", "apps/client", "apps/admin", "packages/ui", "packages/types"],
   "scripts": {
     "mobile": "npm --workspace apps/mobile start",
+    "client": "npm --workspace apps/client dev",
+    "admin": "npm --workspace apps/admin dev",
+    "client:build": "npm --workspace apps/client run build",
+    "admin:build": "npm --workspace apps/admin run build",
+    "typecheck": "npm --workspace apps/mobile run typecheck && npm --workspace apps/client run typecheck && npm --workspace apps/admin run typecheck",
     "android": "npm --workspace apps/mobile run android",
     "ios": "npm --workspace apps/mobile run ios",
     "web": "npm --workspace apps/mobile run web",
-    "typecheck": "npm --workspace apps/mobile run typecheck",
     "api": "python -m uvicorn app.main:app --reload --port 8000"
   }
 }
