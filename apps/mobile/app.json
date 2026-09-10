@@ -2,15 +2,16 @@
   "expo": {
     "name": "LIVYA",
     "slug": "livya",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "scheme": "livya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": ["expo-router", "expo-secure-store", "expo-apple-authentication"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.livya.app"
+      "bundleIdentifier": "com.livya.app",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.livya.app",
