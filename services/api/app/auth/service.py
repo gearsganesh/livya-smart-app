@@ -81,18 +81,10 @@ class AuthService:
                 key_data = next((key for key in keys if key.get("kid") == header.get("kid")), None)
                 if not key_data:
                     raise ValueError("Unknown signing key")
-                kty = key_data.get("kty")
-                if kty == "RSA":
-                    signing_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
-                elif kty == "EC":
-                    signing_key = jwt.algorithms.ECAlgorithm.from_jwk(key_data)
-                elif kty == "OKP":
-                    signing_key = jwt.algorithms.OKPAlgorithm.from_jwk(key_data)
-                else:
-                    raise ValueError("Unsupported signing key type")
                 algorithm = header.get("alg")
                 if algorithm not in {"RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "EdDSA"}:
                     raise ValueError("Unsupported JWT algorithm")
+                signing_key = jwt.PyJWK.from_dict(key_data).key
                 return jwt.decode(token, signing_key, algorithms=[algorithm], audience="authenticated", issuer=self.auth_url)
             except (jwt.PyJWTError, ValueError, TypeError) as exc:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired access token") from exc
