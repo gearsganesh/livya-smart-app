@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from .api.v1.ai import router as ai_router
 from .api.v1.auth import router as auth_router
 from .api.v1.checkins import router as checkins_router
+from .api.v1.webhooks import router as webhooks_router
 from .auth.dependencies import AuthMiddleware
 from .config import settings
 from .security.transport import AIRequestSizeMiddleware, HTTPSOnlyMiddleware
@@ -18,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="LIVYA API", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="LIVYA API", version="0.4.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -33,8 +34,6 @@ app.add_middleware(AuthMiddleware)
 
 @app.exception_handler(RequestValidationError)
 async def sanitized_validation_error(request: Request, exc: RequestValidationError):
-    # FastAPI's default validation response may include rejected input values.
-    # Never expose those values for the blind processor endpoint.
     if request.url.path == "/api/v1/ai/process":
         return JSONResponse(status_code=422, content={"detail": "Invalid AI request"})
     return JSONResponse(status_code=422, content={"detail": "Request validation failed"})
@@ -43,6 +42,7 @@ async def sanitized_validation_error(request: Request, exc: RequestValidationErr
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
 app.include_router(checkins_router, prefix="/api/v1")
+app.include_router(webhooks_router, prefix="/api/v1")
 
 
 @app.get("/health")
