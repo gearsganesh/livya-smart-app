@@ -5,6 +5,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import '../global.css';
+import { AuthProvider } from '../lib/auth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,8 +23,10 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage });
 export default function RootLayout() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }} />
+      </AuthProvider>
     </PersistQueryClientProvider>
   );
 }
