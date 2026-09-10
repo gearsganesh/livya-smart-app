@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .api.v1.ai import router as ai_router
 from .api.v1.auth import router as auth_router
@@ -25,6 +27,16 @@ app.add_middleware(
 )
 app.add_middleware(HTTPSOnlyMiddleware)
 app.add_middleware(AuthMiddleware)
+
+
+@app.exception_handler(RequestValidationError)
+async def sanitized_validation_error(request: Request, exc: RequestValidationError):
+    # FastAPI's default validation response may include rejected input values.
+    # Never expose those values for the blind processor endpoint.
+    if request.url.path == "/api/v1/ai/process":
+        return JSONResponse(status_code=422, content={"detail": "Invalid AI request"})
+    return JSONResponse(status_code=422, content={"detail": "Request validation failed"})
+
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
