@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_publishable_key: str = ""
 
-    # Blind Processor: local/private inference is the default.
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.2:3b"
     whisper_url: str = "http://127.0.0.1:9000"
@@ -18,7 +17,6 @@ class Settings(BaseSettings):
     ai_max_audio_bytes: int = 6_000_000
     ai_max_request_bytes: int = 9_000_000
 
-    # External providers are opt-in. Keep false for strict private/local deployments.
     allow_external_ai_fallback: bool = False
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
@@ -27,7 +25,10 @@ class Settings(BaseSettings):
     anthropic_base_url: str = "https://api.anthropic.com"
     anthropic_model: str = "claude-sonnet-5"
 
-    # In production TLS is expected to terminate at a trusted edge/load balancer.
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+
     require_https: bool = True
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
