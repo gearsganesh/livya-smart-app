@@ -1,58 +1,75 @@
-# LIVYA AI Smart App
+# LIVYA Smart App
 
-Production rebuild of the LIVYA AI healthcare prototype using Next.js, TypeScript and Supabase.
+Step 1 initializes the cross-platform mobile + backend foundation.
 
 ## Stack
+- Expo SDK 51 + React Native + TypeScript
+- Expo Router
+- NativeWind / Tailwind CSS
+- TanStack Query v5
+- FastAPI + Pydantic v2
+- PostgreSQL + SQLAlchemy 2 async
+- Docker Compose
+- Supabase project integration via environment variables
 
-- Next.js 16
-- React 19
-- TypeScript
-- Supabase Auth + Postgres + RLS
-- Lucide icons
+## Layout
 
-## Local setup
+```text
+livya-smart-app/
+├── apps/mobile/              # iOS / Android / web client
+│   ├── app/                  # Expo Router routes
+│   ├── components/
+│   ├── lib/
+│   ├── assets/
+│   ├── app.json
+│   ├── babel.config.js
+│   ├── metro.config.js
+│   ├── nativewind-env.d.ts
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── tsconfig.json
+├── services/api/             # FastAPI service
+│   ├── app/
+│   │   ├── api/v1/
+│   │   ├── core/
+│   │   ├── db/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   └── services/
+│   ├── tests/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── docs/
+├── docker-compose.yml
+└── package.json
+```
 
+## Environment
+
+### Mobile
 ```bash
+cd apps/mobile
+cp .env.example .env
 npm install
-cp .env.example .env.local
-npm run dev
+npx expo start
 ```
 
-Set these values in `.env.local`:
+Use Expo Go for the first device test, or `npm run android` / `npm run ios` when native tooling is installed.
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://tiywldtrchjnmkkjgwmy.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+### Backend
+```bash
+cd services/api
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-The publishable key belongs in the browser environment. Never put a Supabase secret/service-role key in `.env.local` for a frontend app or commit it to Git.
+### Full local stack
+From repository root:
+```bash
+docker compose up --build
+```
 
-## Current production foundation
-
-- Supabase project connected
-- Core schema deployed
-- RLS enabled on all clinical tables
-- Auth profile bootstrap trigger deployed
-- Patient self-creation policy deployed
-- Email OTP / magic-link sign-in implemented
-- Patient dashboard reads live vitals, medication schedule and appointments
-- Manual vital entry writes to Supabase
-- Admin navigation is restricted to users present in `staff_users`
-- Responsive patient/admin shell implemented
-
-## Database migrations
-
-Migrations live in `supabase/migrations/` and are applied to the connected Supabase project as versioned changes.
-
-## Build roadmap
-
-1. Authentication and onboarding
-2. Health monitoring + wearable sync
-3. Medicines + e-prescriptions
-4. Health records + Storage + AI extraction/review
-5. Scheduling and care bookings
-6. Nutrition, programmes and wellness
-7. Labs, store and membership
-8. Patient 360 admin console
-9. LIVYA AI assistant
-10. Production hardening, audit, observability and deployment
+API health check: `http://localhost:8000/health`

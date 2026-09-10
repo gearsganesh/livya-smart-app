@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "LIVYA",
+    "slug": "livya",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "livya",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": ["expo-router", "expo-secure-store"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.livya.app"
+    },
+    "android": {
+      "package": "com.livya.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F4F7F5"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
+      "supabaseUrl": "${EXPO_PUBLIC_SUPABASE_URL}",
+      "supabasePublishableKey": "${EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY}"
+    }
+  }
+}

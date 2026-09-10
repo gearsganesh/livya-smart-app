@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: livya
+      POSTGRES_USER: livya
+      POSTGRES_PASSWORD: livya
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: ./services/api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://livya:livya@db:5432/livya
+      APP_ENV: development
+      CORS_ORIGINS: '["http://localhost:8081","http://localhost:19006"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./services/api:/app
+
+volumes:
+  postgres_data:
