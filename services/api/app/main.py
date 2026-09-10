@@ -9,7 +9,7 @@ from .api.v1.ai import router as ai_router
 from .api.v1.auth import router as auth_router
 from .auth.dependencies import AuthMiddleware
 from .config import settings
-from .security.transport import HTTPSOnlyMiddleware
+from .security.transport import AIRequestSizeMiddleware, HTTPSOnlyMiddleware
 
 
 @asynccontextmanager
@@ -26,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(HTTPSOnlyMiddleware)
+app.add_middleware(AIRequestSizeMiddleware)
 app.add_middleware(AuthMiddleware)
 
 
