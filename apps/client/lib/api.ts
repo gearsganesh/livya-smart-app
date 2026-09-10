@@ -1,0 +1,1 @@
+export async function apiFetch<T>(path:string,init:RequestInit={}){const base=process.env.NEXT_PUBLIC_API_URL??'';const response=await fetch(`${base}${path}`,{...init,headers:{'Content-Type':'application/json',...(init.headers??{})},cache:'no-store'});if(!response.ok)throw new Error(`API request failed (${response.status})`);return response.json() as Promise<T>}
