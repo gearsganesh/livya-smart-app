@@ -4,10 +4,8 @@ import asyncio
 import base64
 import gc
 import json
-import time
 from dataclasses import dataclass
 from typing import Any
-from uuid import uuid4
 
 import httpx
 
@@ -54,9 +52,13 @@ class BlindProcessor:
         return min(settings.ai_max_timeout_seconds, max(settings.ai_min_timeout_seconds, 8 + size / 500))
 
     async def process(self, request: AIProcessRequest) -> ProcessorResult:
-        request.validate_content()
+        request.validate_content(
+            max_text_chars=settings.ai_max_text_chars,
+            max_audio_b64_chars=settings.ai_max_audio_bytes * 4 // 3 + 16,
+        )
         text: str | None = None
         audio_bytes: bytes | None = None
+        prompt: str | None = None
         try:
             if request.input_type is AIInputType.audio:
                 try:
@@ -73,10 +75,7 @@ class BlindProcessor:
 
             if not text:
                 raise AIProcessorError("No processable input was provided", status_code=422)
-            if len(text) > settings.ai_max_text_chars:
-                raise AIProcessorError("Input text exceeds the permitted size", status_code=413)
 
-            # Context is intentionally reduced to primitive metadata. It is never persisted.
             safe_context = self._sanitize_context(request.context)
             prompt = self._build_user_prompt(text, safe_context)
 
@@ -105,9 +104,9 @@ class BlindProcessor:
             # Best-effort memory hygiene. Python cannot guarantee physical zeroization,
             # but references to sensitive buffers are removed immediately after processing.
             text = None
+            prompt = None
             if audio_bytes is not None:
                 audio_bytes = b""
-            prompt = None
             gc.collect()
 
     def _sanitize_context(self, context: dict[str, Any]) -> dict[str, Any]:
