@@ -68,30 +68,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       return;
     }
-    setProfile(await loadProfile(session.user.id));
+    try {
+      setProfile(await loadProfile(session.user.id));
+    } catch (error) {
+      console.warn('Profile load failed', error);
+    }
   }, [session?.user?.id]);
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) {
-        try { setProfile(await loadProfile(data.session.user.id)); } catch (error) { console.warn('Profile load failed', error); }
-      }
-      setLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setSession(data.session);
+    }).finally(() => {
+      if (mounted) setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      if (!mounted) return;
-      setSession(nextSession);
-      if (nextSession?.user) {
-        try { setProfile(await loadProfile(nextSession.user.id)); } catch (error) { console.warn('Profile load failed', error); }
-      } else setProfile(null);
-      setLoading(false);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mounted) setSession(nextSession);
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null);
+      return;
+    }
+    void refreshProfile();
+  }, [session?.user?.id, refreshProfile]);
 
   const signUp = useCallback(async (email: string, password: string, name?: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, full_name: name } } });
