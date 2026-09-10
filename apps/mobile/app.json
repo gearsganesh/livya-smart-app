@@ -2,22 +2,32 @@
   "expo": {
     "name": "LIVYA",
     "slug": "livya",
-    "version": "0.2.0",
+    "version": "0.4.0",
     "orientation": "portrait",
     "scheme": "livya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "plugins": ["expo-router", "expo-secure-store", "expo-apple-authentication"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-apple-authentication",
+      ["expo-notifications", { "color": "#6366f1", "defaultChannel": "default" }],
+      ["expo-local-authentication", { "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID to protect your health account." }]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.livya.app",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "package": "com.livya.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F4F7F5"
-      }
+        "backgroundColor": "#090d16"
+      },
+      "permissions": ["POST_NOTIFICATIONS"]
     },
     "web": {
       "bundler": "metro"
@@ -25,7 +35,10 @@
     "extra": {
       "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
       "supabaseUrl": "${EXPO_PUBLIC_SUPABASE_URL}",
-      "supabasePublishableKey": "${EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY}"
+      "supabasePublishableKey": "${EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY}",
+      "revenueCatIosApiKey": "${EXPO_PUBLIC_REVENUECAT_IOS_API_KEY}",
+      "revenueCatAndroidApiKey": "${EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY}",
+      "eas": { "projectId": "${EAS_PROJECT_ID}" }
     }
   }
 }
