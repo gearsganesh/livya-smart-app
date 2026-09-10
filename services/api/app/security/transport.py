@@ -10,17 +10,28 @@ from ..config import settings
 
 
 class HTTPSOnlyMiddleware(BaseHTTPMiddleware):
-    """Reject clear-text API access in production.
-
-    TLS itself should be terminated by the trusted ingress/load balancer. The
-    middleware honors X-Forwarded-Proto only when running behind that edge.
-    """
+    """Reject clear-text API access in production."""
 
     async def dispatch(self, request: Request, call_next):
         if settings.require_https and settings.app_env.lower() not in {"development", "test"}:
             forwarded = request.headers.get("x-forwarded-proto", "").split(",", 1)[0].strip().lower()
             if request.url.scheme != "https" and forwarded != "https":
                 return JSONResponse(status_code=426, content={"detail": "HTTPS/TLS 1.3 is required"})
+        return await call_next(request)
+
+
+class AIRequestSizeMiddleware(BaseHTTPMiddleware):
+    """Reject oversized AI request bodies before FastAPI parses them."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path == "/api/v1/ai/process":
+            content_length = request.headers.get("content-length")
+            if content_length:
+                try:
+                    if int(content_length) > settings.ai_max_request_bytes:
+                        return JSONResponse(status_code=413, content={"detail": "AI request is too large"})
+                except ValueError:
+                    return JSONResponse(status_code=400, content={"detail": "Invalid content length"})
         return await call_next(request)
 
 
