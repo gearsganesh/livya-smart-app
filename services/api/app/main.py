@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from .api.v1.ai import router as ai_router
 from .api.v1.auth import router as auth_router
+from .api.v1.checkins import router as checkins_router
 from .auth.dependencies import AuthMiddleware
 from .config import settings
 from .security.transport import AIRequestSizeMiddleware, HTTPSOnlyMiddleware
@@ -41,6 +42,7 @@ async def sanitized_validation_error(request: Request, exc: RequestValidationErr
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(ai_router, prefix="/api/v1")
+app.include_router(checkins_router, prefix="/api/v1")
 
 
 @app.get("/health")
