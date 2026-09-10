@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -28,17 +30,32 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
 const redirectTo = Linking.createURL('auth/callback');
 
 async function loadProfile(userId: string): Promise<AuthProfile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id,email,name,subscription_tier,full_name,avatar_url')
-    .eq('id', userId)
-    .maybeSingle();
+  const { data, error } = await supabase.from('profiles').select('id,email,name,subscription_tier,full_name,avatar_url').eq('id', userId).maybeSingle();
   if (error) throw error;
   return data as AuthProfile | null;
+}
+
+async function completeOAuth(url: string) {
+  const parsed = Linking.parse(url);
+  const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : undefined;
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    return;
+  }
+  const hash = url.split('#')[1];
+  if (hash) {
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      if (error) throw error;
+    }
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -70,24 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession);
       if (nextSession?.user) {
         try { setProfile(await loadProfile(nextSession.user.id)); } catch (error) { console.warn('Profile load failed', error); }
-      } else {
-        setProfile(null);
-      }
+      } else setProfile(null);
       setLoading(false);
     });
-
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name, full_name: name } },
-    });
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name, full_name: name } } });
     if (error) throw error;
     return { needsEmailConfirmation: !data.session };
   }, []);
@@ -98,38 +105,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithProvider = useCallback(async (provider: 'google' | 'apple') => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (error) throw error;
-    if (!data.url) throw new Error(`No ${provider} OAuth URL returned`);
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') {
-      if (result.type === 'cancel' || result.type === 'dismiss') return;
-      throw new Error(`${provider} authentication did not complete`);
-    }
-
-    const callbackUrl = result.url;
-    const parsed = Linking.parse(callbackUrl);
-    const code = typeof parsed.queryParams?.code === 'string' ? parsed.queryParams.code : undefined;
-    if (code) {
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
+    if (provider === 'apple' && Platform.OS === 'ios') {
+      const available = await AppleAuthentication.isAvailableAsync();
+      if (!available) throw new Error('Apple Sign In is not available on this device');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      });
+      if (!credential.identityToken) throw new Error('Apple did not return an identity token');
+      const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+      if (error) throw error;
+      if (data.user && credential.fullName) {
+        const parts = [credential.fullName.givenName, credential.fullName.middleName, credential.fullName.familyName].filter(Boolean);
+        if (parts.length) await supabase.auth.updateUser({ data: { full_name: parts.join(' ') } });
+      }
       return;
     }
 
-    const hash = callbackUrl.split('#')[1];
-    if (hash) {
-      const params = new URLSearchParams(hash);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      if (accessToken && refreshToken) {
-        const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        if (sessionError) throw sessionError;
-      }
-    }
+    const { data, error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true } });
+    if (error) throw error;
+    if (!data.url) throw new Error(`No ${provider} OAuth URL returned`);
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type === 'success') await completeOAuth(result.url);
+    else if (result.type !== 'cancel' && result.type !== 'dismiss') throw new Error(`${provider} authentication did not complete`);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -137,18 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const value = useMemo<AuthContextValue>(() => ({
-    session,
-    user: session?.user ?? null,
-    profile,
-    loading,
-    signUp,
-    signIn,
-    signInWithProvider,
-    signOut,
-    refreshProfile,
-  }), [session, profile, loading, signUp, signIn, signInWithProvider, signOut, refreshProfile]);
-
+  const value = useMemo<AuthContextValue>(() => ({ session, user: session?.user ?? null, profile, loading, signUp, signIn, signInWithProvider, signOut, refreshProfile }), [session, profile, loading, signUp, signIn, signInWithProvider, signOut, refreshProfile]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
