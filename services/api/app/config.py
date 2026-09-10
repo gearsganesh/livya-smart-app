@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ai_max_timeout_seconds: float = 90.0
     ai_max_text_chars: int = 20_000
     ai_max_audio_bytes: int = 6_000_000
+    ai_max_request_bytes: int = 9_000_000
 
     # External providers are opt-in. Keep false for strict private/local deployments.
     allow_external_ai_fallback: bool = False
