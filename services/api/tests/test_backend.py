@@ -81,13 +81,14 @@ def test_dynamic_ai_payload_does_not_echo_raw_input_or_create_disk_artifacts(mon
 
     monkeypatch.setattr("app.api.v1.ai.blind_processor.process", fake_process)
     monkeypatch.setattr("app.auth.dependencies.auth_service.verify_token", fake_verify)
-    before = {p.relative_to(tmp_path) for p in tmp_path.rglob("*")}
+    monkeypatch.chdir(tmp_path)
+    before = set(tmp_path.rglob("*"))
     with TestClient(app) as client:
         response = client.post(
             "/api/v1/ai/process", headers={"Authorization": "Bearer test-token"},
             json={"input_type": "text", "text": raw_secret, "context": {"source": "test"}},
         )
-    after = {p.relative_to(tmp_path) for p in tmp_path.rglob("*")}
+    after = set(tmp_path.rglob("*"))
     assert response.status_code == 200
     assert raw_secret not in response.text
     assert after == before
