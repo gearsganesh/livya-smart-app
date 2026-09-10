@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...auth.dependencies import get_current_user
 from ...db import get_db
 
-router = APIRouter(prefix="/check-ins", tags=["check-ins"])
+router = APIRouter(tags=["check-ins"])
 
 
 class CheckInRequest(BaseModel):
@@ -23,7 +23,7 @@ class DashboardResponse(BaseModel):
     note: str | None = None
 
 
-@router.get("/../dashboard", response_model=DashboardResponse, include_in_schema=False)
+@router.get("/dashboard", response_model=DashboardResponse)
 async def dashboard(user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         text("""
@@ -39,7 +39,7 @@ async def dashboard(user: dict = Depends(get_current_user), db: AsyncSession = D
     return DashboardResponse(healthScore=78, hydrationMl=1200, mood=7, focus=7, note=row[0] if row else None)
 
 
-@router.post("", response_model=DashboardResponse)
+@router.post("/check-ins", response_model=DashboardResponse)
 async def create_check_in(
     payload: CheckInRequest,
     user: dict = Depends(get_current_user),
