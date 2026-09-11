@@ -1,0 +1,1 @@
+.admin-empty{min-height:90px;display:grid;place-items:center;gap:4px;text-align:center;padding:20px;color:var(--m)}.admin-empty b{font-size:11px;color:var(--i2)}.admin-empty small{font-size:9px;color:var(--m)}.admin-auth-error{margin:0 0 12px;padding:10px 12px;border-radius:9px;background:#fbe4e1;color:var(--crit);font-size:10px;line-height:1.45}
