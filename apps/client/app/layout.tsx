@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './desktop-responsive.css';
+import './empty.css';
 
 export const metadata: Metadata = {
   title: 'LIVYA',
@@ -8,9 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+  return <html lang="en"><body>{children}</body></html>;
 }
