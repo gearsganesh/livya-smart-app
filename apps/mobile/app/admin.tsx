@@ -1,29 +1,5 @@
-import { View, Text, ScrollView } from 'react-native';
-
-const metrics = [
-  ['Active members', '1,284'],
-  ['Vital alerts', '7'],
-  ['AI review queue', '12'],
-  ['Bookings today', '48']
-];
+import { ScrollView, Text, View } from 'react-native';
 
 export default function AdminHome() {
-  return (
-    <ScrollView className="flex-1 bg-[#F7F8F7] px-6 pt-16">
-      <Text className="text-sm font-semibold tracking-widest text-[#6C817A]">LIVYA ADMIN</Text>
-      <Text className="mt-2 text-3xl font-bold text-[#163B32]">Clinical command centre</Text>
-      <View className="mt-8 gap-3">
-        {metrics.map(([label, value]) => (
-          <View key={label} className="rounded-3xl bg-white p-5">
-            <Text className="text-sm text-[#6C817A]">{label}</Text>
-            <Text className="mt-1 text-3xl font-bold text-[#163B32]">{value}</Text>
-          </View>
-        ))}
-      </View>
-      <View className="mt-5 mb-10 rounded-3xl border border-[#D6E0DC] bg-white p-5">
-        <Text className="font-bold text-[#163B32]">Priority queue</Text>
-        <Text className="mt-2 text-[#587068]">Vital alerts and AI-assisted record reviews will appear here.</Text>
-      </View>
-    </ScrollView>
-  );
+  return <ScrollView className="flex-1 bg-[#F4F7F5] px-5 pt-16 dark:bg-[#0F1714]"><Text className="text-sm font-semibold tracking-widest text-[#6C817A] dark:text-[#9EB1A9]">LIVYA ADMIN</Text><Text className="mt-2 text-3xl font-bold text-[#163B32] dark:text-white">Operations</Text><View className="mt-8 rounded-3xl bg-white p-6 dark:bg-[#18231F]"><Text className="text-lg font-bold text-[#163B32] dark:text-white">No operational data yet</Text><Text className="mt-2 leading-6 text-[#587068] dark:text-[#AEBDB7]">Patient, alert, record and booking metrics will appear here from live Supabase data.</Text></View></ScrollView>;
 }
