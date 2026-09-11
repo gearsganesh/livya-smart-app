@@ -29,8 +29,10 @@ create table if not exists public.payment_webhook_events (
 alter table public.subscriptions enable row level security;
 alter table public.payment_webhook_events enable row level security;
 
+drop policy if exists "subscriptions owner read" on public.subscriptions;
 create policy "subscriptions owner read" on public.subscriptions
   for select to authenticated using (auth.uid() = user_id);
 
+drop policy if exists "payment webhook events staff read" on public.payment_webhook_events;
 create policy "payment webhook events staff read" on public.payment_webhook_events
-  for select to authenticated using (public.is_staff(auth.uid()));
+  for select to authenticated using (public.is_staff());
